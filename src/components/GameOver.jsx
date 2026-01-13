@@ -11,11 +11,11 @@ const GameOver = ({ score, highScore, isNewHighScore, onRestart }) => {
 
       <div className="final-score">
         <div className="score-label">FINAL SCORE</div>
-        <div className="score-value">{score.toString().padStart(5, '0')}</div>
+        <div className="score-value">{score.toString().padStart(6, '0')}</div>
       </div>
 
       <div className="high-score-display">
-        BEST: {highScore.toString().padStart(5, '0')}
+        BEST: {highScore.toString().padStart(6, '0')}
       </div>
 
       <button className="restart-button" onClick={onRestart}>
@@ -23,7 +23,7 @@ const GameOver = ({ score, highScore, isNewHighScore, onRestart }) => {
       </button>
 
       <div className="fruits-fallen">
-        🍎 🍊 🍇 🍌 🍉
+        🍎 🍊 🍇 🍌 🍉 🍓
       </div>
     </div>
   );

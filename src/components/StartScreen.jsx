@@ -1,5 +1,3 @@
-import { COLORS } from '../game/constants';
-
 const StartScreen = ({ onStart, highScore }) => {
   return (
     <div className="screen start-screen">
@@ -14,7 +12,7 @@ const StartScreen = ({ onStart, highScore }) => {
       </div>
 
       <div className="fruits-display">
-        🍇 🍌 🍉
+        🍇 🍌 🍉 🍓 🥝
       </div>
 
       <button className="start-button" onClick={onStart}>
@@ -22,16 +20,18 @@ const StartScreen = ({ onStart, highScore }) => {
       </button>
 
       <div className="high-score">
-        HIGH SCORE: {highScore.toString().padStart(5, '0')}
+        HIGH SCORE: {highScore.toString().padStart(6, '0')}
       </div>
 
       <div className="instructions">
-        <p>CLICK TO SHOOT</p>
-        <p>DON'T LET FRUITS ESCAPE!</p>
+        <p>🎯 CLICK TO SHOOT</p>
+        <p>💣 AVOID BOMBS</p>
+        <p>⭐ CATCH POWER-UPS</p>
+        <p>🔥 BUILD COMBOS FOR BONUS POINTS</p>
       </div>
 
       <div className="credits">
-        ← → AIM | CLICK FIRE
+        MOVE MOUSE TO AIM • CLICK TO FIRE
       </div>
     </div>
   );
