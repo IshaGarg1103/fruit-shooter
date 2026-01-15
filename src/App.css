@@ -85,54 +85,58 @@ body {
 
 /* ==================== START SCREEN ==================== */
 
+.start-screen {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
 .start-screen .title-container {
-  margin-bottom: 15px;
+  margin-bottom: 0;
 }
 
 .start-screen .title {
   font-family: 'Orbitron', sans-serif;
-  font-size: 48px;
+  font-size: 36px;
   font-weight: 900;
   color: var(--white);
   text-shadow: 
     0 0 20px var(--infinity-blue),
     0 0 40px var(--infinity-purple),
     4px 4px 0 var(--dark-purple);
-  line-height: 1.2;
+  line-height: 1.1;
   letter-spacing: 4px;
 }
 
-.start-screen .fruit-icon {
-  display: inline-block;
-  font-size: 40px;
-  margin: 0 12px;
-  animation: bounce 1s ease-in-out infinite;
-  filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.5));
+.gojo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 10px 0;
 }
 
-.start-screen .fruit-icon:last-child {
-  animation-delay: 0.5s;
-}
-
-.fruits-display {
-  font-size: 44px;
-  margin: 24px 0;
+.gojo-title-image {
+  height: 200px;
+  width: auto;
+  filter: drop-shadow(0 0 20px var(--infinity-blue)) drop-shadow(0 0 40px var(--infinity-purple));
   animation: float 3s ease-in-out infinite;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
 }
 
 .start-button,
 .restart-button {
   font-family: 'Orbitron', sans-serif;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
-  padding: 18px 50px;
+  padding: 14px 40px;
   background: linear-gradient(180deg, var(--infinity-blue) 0%, var(--infinity-purple) 100%);
   color: var(--white);
   border: none;
   border-radius: 30px;
   cursor: pointer;
-  margin: 24px 0;
+  margin: 10px 0;
   transition: all 0.3s;
   box-shadow: 
     0 6px 20px rgba(0, 212, 255, 0.4),
@@ -157,31 +161,28 @@ body {
 
 .high-score {
   font-family: 'Orbitron', sans-serif;
-  font-size: 14px;
+  font-size: 12px;
   color: var(--infinity-blue);
-  margin: 20px 0;
+  margin: 8px 0;
   text-shadow: 0 0 15px var(--infinity-blue);
   letter-spacing: 2px;
 }
 
 .instructions {
-  font-size: 15px;
-  color: rgba(255, 255, 255, 0.8);
-  line-height: 2;
-  margin-top: 20px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 10px;
+  flex-wrap: wrap;
 }
 
-.instructions p {
-  margin: 6px 0;
-}
-
-.credits {
-  position: absolute;
-  bottom: 15px;
-  font-size: 12px;
-  color: var(--infinity-purple);
-  opacity: 0.6;
-  letter-spacing: 1px;
+.instructions .divider {
+  color: var(--infinity-blue);
+  opacity: 0.5;
 }
 
 /* ==================== GAME SCREEN ==================== */
@@ -272,30 +273,34 @@ body {
 }
 
 .lives {
-  font-size: 28px;
   display: flex;
-  gap: 8px;
+  gap: 6px;
+  align-items: center;
 }
 
-.heart {
+.life-icon {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid var(--infinity-blue);
   transition: all 0.3s;
-  filter: drop-shadow(0 0 5px currentColor);
+  filter: drop-shadow(0 0 8px var(--infinity-blue));
 }
 
-.heart.active {
-  color: var(--infinity-blue);
-  animation: heartBeat 1s ease-in-out infinite;
+.life-icon.active {
+  animation: lifePulse 1.5s ease-in-out infinite;
 }
 
-.heart.lost {
-  color: #333;
-  opacity: 0.4;
-  filter: none;
+.life-icon.lost {
+  opacity: 0.25;
+  filter: grayscale(1);
+  border-color: #444;
 }
 
-@keyframes heartBeat {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.2); }
+@keyframes lifePulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 10px var(--infinity-blue); }
+  50% { transform: scale(1.1); box-shadow: 0 0 20px var(--infinity-purple); }
 }
 
 .active-effects {

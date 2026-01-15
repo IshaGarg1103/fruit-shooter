@@ -1,4 +1,15 @@
 const GameOver = ({ score, highScore, isNewHighScore, onRestart }) => {
+  const playClickSound = () => {
+    const audio = new Audio('./click.mp3');
+    audio.volume = 0.5;
+    audio.play();
+  };
+
+  const handleRestart = () => {
+    playClickSound();
+    onRestart();
+  };
+
   return (
     <div className="screen game-over-screen">
       <h1 className="game-over-title">GAME OVER</h1>
@@ -18,7 +29,7 @@ const GameOver = ({ score, highScore, isNewHighScore, onRestart }) => {
         BEST: {highScore.toString().padStart(6, '0')}
       </div>
 
-      <button className="restart-button" onClick={onRestart}>
+      <button className="restart-button" onClick={handleRestart}>
         ↻ PLAY AGAIN
       </button>
 

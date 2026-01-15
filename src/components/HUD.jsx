@@ -4,9 +4,12 @@ const HUD = ({ score, lives, wave, combo, activeEffects }) => {
   const hearts = [];
   for (let i = 0; i < INITIAL_LIVES; i++) {
     hearts.push(
-      <span key={i} className={`heart ${i < lives ? 'active' : 'lost'}`}>
-        {i < lives ? '◆' : '◇'}
-      </span>
+      <img 
+        key={i} 
+        src="./geto-life.png" 
+        alt="life"
+        className={`life-icon ${i < lives ? 'active' : 'lost'}`}
+      />
     );
   }
 

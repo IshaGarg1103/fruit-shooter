@@ -6,6 +6,15 @@ import { createBullet, updateBullet, drawBullet, isBulletOffScreen } from '../ga
 import { processCollisions } from '../game/collision';
 import HUD from './HUD';
 
+// Preload life-lost sound
+const lifeLostSound = new Audio('./life-lost.mp3');
+lifeLostSound.volume = 1.0;
+
+const playLifeLostSound = () => {
+  lifeLostSound.currentTime = 0;
+  lifeLostSound.play().catch(() => {});
+};
+
 const Game = ({ onGameOver, score, setScore, lives, setLives }) => {
   const canvasRef = useRef(null);
   const gojoImageRef = useRef(null);
@@ -299,6 +308,7 @@ const Game = ({ onGameOver, score, setScore, lives, setLives }) => {
           addFloatingScore(fruit.x, fruit.y, fruit.effect === 'extraLife' ? '+💙' : '⚡', true);
         } else if (fruit.isBomb) {
           // Bomb takes away 1 life
+          playLifeLostSound();
           setLives(prev => {
             const newLives = prev - 1;
             if (newLives <= 0) {
@@ -351,6 +361,7 @@ const Game = ({ onGameOver, score, setScore, lives, setLives }) => {
       
       const livesLost = escapedFruits.filter(f => !f.isBomb).length;
       if (livesLost > 0) {
+        playLifeLostSound();
         setCombo(0);
         setLives(prev => {
           const newLives = prev - livesLost;

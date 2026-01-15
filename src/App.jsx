@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { INITIAL_LIVES } from './game/constants';
 import StartScreen from './components/StartScreen';
@@ -12,13 +12,59 @@ function App() {
   const [lives, setLives] = useState(INITIAL_LIVES);
   const [highScore, setHighScore] = useLocalStorage('fruitShooterHighScore', 0);
   const [isNewHighScore, setIsNewHighScore] = useState(false);
+  const [musicStarted, setMusicStarted] = useState(false);
+  
+  const bgMusicRef = useRef(null);
+
+  // Initialize background music
+  useEffect(() => {
+    bgMusicRef.current = new Audio('./bg-music.mp3');
+    bgMusicRef.current.loop = true;
+    bgMusicRef.current.volume = 0.3;
+    
+    return () => {
+      if (bgMusicRef.current) {
+        bgMusicRef.current.pause();
+        bgMusicRef.current = null;
+      }
+    };
+  }, []);
+
+  // Control music based on game state
+  useEffect(() => {
+    const music = bgMusicRef.current;
+    if (!music || !musicStarted) return;
+
+    if (gameState === 'start') {
+      // Title screen: play from 0:00
+      music.currentTime = 0;
+      music.play().catch(() => {});
+    } else if (gameState === 'playing') {
+      // Game: play from 0:20
+      music.currentTime = 20;
+      music.play().catch(() => {});
+    } else if (gameState === 'gameover') {
+      // Game over: stop music
+      music.pause();
+    }
+  }, [gameState, musicStarted]);
 
   const handleStart = useCallback(() => {
+    // Start music on first user interaction
+    if (!musicStarted) {
+      setMusicStarted(true);
+      const music = bgMusicRef.current;
+      if (music) {
+        music.currentTime = 20; // Will play from 0:20 when game starts
+        music.play().catch(() => {});
+      }
+    }
+    
     setScore(0);
     setLives(INITIAL_LIVES);
     setIsNewHighScore(false);
     setGameState('playing');
-  }, []);
+  }, [musicStarted]);
 
   const handleGameOver = useCallback(() => {
     setGameState('gameover');
@@ -33,8 +79,11 @@ function App() {
   }, [highScore, setHighScore]);
 
   const handleRestart = useCallback(() => {
-    handleStart();
-  }, [handleStart]);
+    setScore(0);
+    setLives(INITIAL_LIVES);
+    setIsNewHighScore(false);
+    setGameState('playing');
+  }, []);
 
   return (
     <div className="app">

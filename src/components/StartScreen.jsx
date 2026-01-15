@@ -1,21 +1,30 @@
 const StartScreen = ({ onStart, highScore }) => {
+  const playClickSound = () => {
+    const audio = new Audio('./click.mp3');
+    audio.volume = 0.5;
+    audio.play();
+  };
+
+  const handleStart = () => {
+    playClickSound();
+    onStart();
+  };
+
   return (
     <div className="screen start-screen">
       <div className="title-container">
         <h1 className="title">
-          <span className="fruit-icon">🍎</span>
           FRUIT
           <br />
-          SHOOTER
-          <span className="fruit-icon">🍊</span>
+          EXPANSION
         </h1>
       </div>
 
-      <div className="fruits-display">
-        🍇 🍌 🍉 🍓 🥝
+      <div className="gojo-container">
+        <img src="./gojo-title.png" alt="Gojo" className="gojo-title-image" />
       </div>
 
-      <button className="start-button" onClick={onStart}>
+      <button className="start-button" onClick={handleStart}>
         ▶ START GAME
       </button>
 
@@ -24,14 +33,13 @@ const StartScreen = ({ onStart, highScore }) => {
       </div>
 
       <div className="instructions">
-        <p>🎯 CLICK TO SHOOT</p>
-        <p>💣 AVOID BOMBS</p>
-        <p>⭐ CATCH POWER-UPS</p>
-        <p>🔥 BUILD COMBOS FOR BONUS POINTS</p>
-      </div>
-
-      <div className="credits">
-        MOVE MOUSE TO AIM • CLICK TO FIRE
+        <span>CLICK TO SHOOT</span>
+        <span className="divider">•</span>
+        <span>AVOID BOMBS</span>
+        <span className="divider">•</span>
+        <span>CATCH POWER-UPS</span>
+        <span className="divider">•</span>
+        <span>BUILD COMBOS</span>
       </div>
     </div>
   );
