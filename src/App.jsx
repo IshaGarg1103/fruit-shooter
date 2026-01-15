@@ -41,17 +41,19 @@ function App() {
       music.currentTime = 0;
       music.play().catch(() => {});
     } else if (gameState === 'playing') {
-      // Game: play from 0:20
+      // Game: play from 0:00
       // Skip immediate play on initial start (handled in handleStart with delay)
       if (isInitialStartRef.current) {
         isInitialStartRef.current = false;
         return;
       }
-      music.currentTime = 20;
+      music.currentTime = 0;
       music.play().catch(() => {});
     } else if (gameState === 'gameover') {
-      // Game over: stop music
-      music.pause();
+      // Game over: continue playing music (don't restart)
+      if (music.paused) {
+        music.play().catch(() => {});
+      }
     }
   }, [gameState, musicStarted]);
 
@@ -59,15 +61,17 @@ function App() {
     // Start music on first user interaction with 1 second delay
     if (!musicStarted) {
       setMusicStarted(true);
-      isInitialStartRef.current = true; // Flag to skip immediate play in useEffect
-      const music = bgMusicRef.current;
-      if (music) {
-        music.currentTime = 20; // Will play from 0:20 when game starts
-        // Delay music by 1 second
-        setTimeout(() => {
-          music.play().catch(() => {});
-        }, 1000);
-      }
+    }
+    
+    isInitialStartRef.current = true; // Flag to skip immediate play in useEffect
+    const music = bgMusicRef.current;
+    if (music) {
+      music.volume = 0.3; // Ensure volume is set
+      music.currentTime = 0; // Will play from 0:00 when game starts
+      // Delay music by 1 second
+      setTimeout(() => {
+        music.play().catch(() => {});
+      }, 1000);
     }
     
     setScore(0);
@@ -93,7 +97,8 @@ function App() {
     isInitialStartRef.current = true; // Flag to skip immediate play in useEffect
     const music = bgMusicRef.current;
     if (music) {
-      music.currentTime = 20; // Will play from 0:20 when game starts
+      music.volume = 0.3; // Restore volume
+      music.currentTime = 0; // Will play from 0:00 when game starts
       // Delay music by 1 second
       setTimeout(() => {
         music.play().catch(() => {});
@@ -106,9 +111,16 @@ function App() {
     setGameState('playing');
   }, []);
 
+  const handleHome = useCallback(() => {
+    setScore(0);
+    setLives(INITIAL_LIVES);
+    setIsNewHighScore(false);
+    setGameState('start');
+  }, []);
+
   return (
     <div className="app">
-      <div className="game-wrapper">
+      <div className={`game-wrapper ${gameState === 'gameover' ? 'game-over-wrapper' : ''}`}>
         {gameState === 'start' && (
           <StartScreen onStart={handleStart} highScore={highScore} />
         )}
@@ -129,6 +141,7 @@ function App() {
             highScore={Math.max(score, highScore)}
             isNewHighScore={isNewHighScore}
             onRestart={handleRestart}
+            onHome={handleHome}
           />
         )}
       </div>

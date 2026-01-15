@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
 import { useGameLoop } from '../hooks/useGameLoop';
-import { CANVAS_WIDTH, CANVAS_HEIGHT, CHARACTER, COLORS, DIFFICULTY, COMBO } from '../game/constants';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, CHARACTER, COLORS, DIFFICULTY, COMBO, INITIAL_LIVES } from '../game/constants';
 import { createFruit, createPowerUp, updateFruit, drawFruit, isFruitOffScreen, createExplosion, updateParticles } from '../game/Fruit';
 import { createBullet, updateBullet, drawBullet, isBulletOffScreen } from '../game/Bullet';
 import { processCollisions } from '../game/collision';
@@ -31,6 +31,19 @@ const Game = ({ onGameOver, score, setScore, lives, setLives }) => {
   const [activeEffects, setActiveEffects] = useState({});
   const [floatingScores, setFloatingScores] = useState([]);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [fontLoaded, setFontLoaded] = useState(false);
+
+  // Load Orbitron font for canvas
+  useEffect(() => {
+    if (document.fonts && document.fonts.check) {
+      document.fonts.ready.then(() => {
+        setFontLoaded(true);
+      });
+    } else {
+      // Fallback: wait a bit for font to load
+      setTimeout(() => setFontLoaded(true), 1000);
+    }
+  }, []);
 
   // Load Gojo sprite
   useEffect(() => {
@@ -297,15 +310,21 @@ const Game = ({ onGameOver, score, setScore, lives, setLives }) => {
         
         if (fruit.isPowerUp) {
           if (fruit.effect === 'extraLife') {
-            setLives(prev => Math.min(prev + 1, 5));
+            // Only add life if player doesn't already have full lives (3)
+            if (lives < INITIAL_LIVES) {
+              setLives(prev => Math.min(prev + 1, 5));
+              addFloatingScore(fruit.x, fruit.y, '+💙', true);
+            }
+            // If lives are full, don't add life or show floating score
           } else if (fruit.effect === 'doublePoints') {
             setActiveEffects(prev => ({ ...prev, doublePoints: true }));
             setTimeout(() => setActiveEffects(prev => ({ ...prev, doublePoints: false })), fruit.duration);
+            addFloatingScore(fruit.x, fruit.y, '⚡', true);
           } else if (fruit.effect === 'rapidFire') {
             setActiveEffects(prev => ({ ...prev, rapidFire: true }));
             setTimeout(() => setActiveEffects(prev => ({ ...prev, rapidFire: false })), fruit.duration);
+            addFloatingScore(fruit.x, fruit.y, '⚡', true);
           }
-          addFloatingScore(fruit.x, fruit.y, fruit.effect === 'extraLife' ? '+💙' : '⚡', true);
         } else if (fruit.isBomb) {
           // Bomb takes away 1 life
           playLifeLostSound();
@@ -387,7 +406,7 @@ const Game = ({ onGameOver, score, setScore, lives, setLives }) => {
       const age = (Date.now() - fs.id) / 800;
       ctx.save();
       ctx.globalAlpha = 1 - age;
-      ctx.font = fs.isCombo ? 'bold 22px Arial, sans-serif' : '18px Arial, sans-serif';
+      ctx.font = fs.isCombo ? '700 22px "Orbitron", sans-serif' : '400 18px "Orbitron", sans-serif';
       ctx.fillStyle = fs.isCombo ? COLORS.combo : (typeof fs.points === 'string' ? COLORS.infinityBlue : (fs.points < 0 ? COLORS.accent : COLORS.primary));
       ctx.strokeStyle = '#000';
       ctx.lineWidth = 3;
@@ -403,7 +422,8 @@ const Game = ({ onGameOver, score, setScore, lives, setLives }) => {
       const age = (performance.now() - comboDisplay.time) / 1000;
       ctx.save();
       ctx.globalAlpha = 1 - age;
-      ctx.font = 'bold 36px Arial, sans-serif';
+      // Use numeric weight (700 = bold) and ensure font is loaded
+      ctx.font = '700 36px "Orbitron", sans-serif';
       ctx.fillStyle = COLORS.combo;
       ctx.strokeStyle = '#000';
       ctx.lineWidth = 4;
