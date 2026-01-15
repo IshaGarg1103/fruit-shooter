@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
 import { useGameLoop } from '../hooks/useGameLoop';
-import { CANVAS_WIDTH, CANVAS_HEIGHT, CANNON, COLORS, DIFFICULTY, COMBO } from '../game/constants';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, CHARACTER, COLORS, DIFFICULTY, COMBO } from '../game/constants';
 import { createFruit, createPowerUp, updateFruit, drawFruit, isFruitOffScreen, createExplosion, updateParticles } from '../game/Fruit';
 import { createBullet, updateBullet, drawBullet, isBulletOffScreen } from '../game/Bullet';
 import { processCollisions } from '../game/collision';
@@ -8,6 +8,7 @@ import HUD from './HUD';
 
 const Game = ({ onGameOver, score, setScore, lives, setLives }) => {
   const canvasRef = useRef(null);
+  const gojoImageRef = useRef(null);
   const fruitsRef = useRef([]);
   const bulletsRef = useRef([]);
   const particlesRef = useRef([]);
@@ -15,13 +16,29 @@ const Game = ({ onGameOver, score, setScore, lives, setLives }) => {
   const fruitsDestroyedRef = useRef(0);
   const lastHitTimeRef = useRef(0);
   const [wave, setWave] = useState(1);
-  const [cannonX, setCannonX] = useState(CANVAS_WIDTH / 2);
+  const [characterX, setCharacterX] = useState(CANVAS_WIDTH / 2);
   const [combo, setCombo] = useState(0);
   const [comboDisplay, setComboDisplay] = useState(null);
   const [activeEffects, setActiveEffects] = useState({});
   const [floatingScores, setFloatingScores] = useState([]);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
-  // Calculate spawn rate based on wave
+  // Load Gojo sprite
+  useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      console.log('Gojo image loaded successfully!', img.width, img.height);
+      gojoImageRef.current = img;
+      setImageLoaded(true);
+    };
+    img.onerror = (e) => {
+      console.error('Failed to load Gojo image:', e);
+    };
+    // Try relative path
+    img.src = './gojo.png';
+  }, []);
+
   const getSpawnRate = useCallback(() => {
     return Math.max(
       DIFFICULTY.minSpawnRate,
@@ -29,21 +46,21 @@ const Game = ({ onGameOver, score, setScore, lives, setLives }) => {
     );
   }, [wave]);
 
-  // Handle mouse/touch movement for cannon aiming
+  // Handle mouse/touch movement
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const updateCannonPosition = (clientX) => {
+    const updatePosition = (clientX) => {
       const rect = canvas.getBoundingClientRect();
       const x = ((clientX - rect.left) / rect.width) * CANVAS_WIDTH;
-      setCannonX(Math.max(CANNON.width / 2, Math.min(x, CANVAS_WIDTH - CANNON.width / 2)));
+      setCharacterX(Math.max(CHARACTER.width / 2, Math.min(x, CANVAS_WIDTH - CHARACTER.width / 2)));
     };
 
-    const handleMouseMove = (e) => updateCannonPosition(e.clientX);
+    const handleMouseMove = (e) => updatePosition(e.clientX);
     const handleTouchMove = (e) => {
       e.preventDefault();
-      updateCannonPosition(e.touches[0].clientX);
+      updatePosition(e.touches[0].clientX);
     };
 
     canvas.addEventListener('mousemove', handleMouseMove);
@@ -60,29 +77,22 @@ const Game = ({ onGameOver, score, setScore, lives, setLives }) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const rect = canvas.getBoundingClientRect();
-    let x;
-
-    if (e.type === 'click') {
-      x = ((e.clientX - rect.left) / rect.width) * CANVAS_WIDTH;
-    } else if (e.type === 'touchstart') {
-      e.preventDefault();
-      x = ((e.touches[0].clientX - rect.left) / rect.width) * CANVAS_WIDTH;
-    }
-
-    // Rapid fire if power-up active
-    const bullet = createBullet(x, CANVAS_HEIGHT);
+    // Bullets spawn from character center (above head)
+    const bulletX = characterX;
+    const baseY = CANVAS_HEIGHT + 5;
+    const bulletY = baseY - CHARACTER.height - 5; // Just above character's head
+    
+    const bullet = createBullet(bulletX, bulletY);
     bulletsRef.current.push(bullet);
     
     if (activeEffects.rapidFire) {
       setTimeout(() => {
-        bulletsRef.current.push(createBullet(x - 15, CANVAS_HEIGHT));
-        bulletsRef.current.push(createBullet(x + 15, CANVAS_HEIGHT));
+        bulletsRef.current.push(createBullet(bulletX - 25, bulletY));
+        bulletsRef.current.push(createBullet(bulletX + 25, bulletY));
       }, 50);
     }
-  }, [activeEffects]);
+  }, [activeEffects, characterX]);
 
-  // Add floating score
   const addFloatingScore = useCallback((x, y, points, isCombo = false) => {
     const id = Date.now() + Math.random();
     setFloatingScores(prev => [...prev, { id, x, y, points, isCombo, life: 1 }]);
@@ -91,56 +101,9 @@ const Game = ({ onGameOver, score, setScore, lives, setLives }) => {
     }, 800);
   }, []);
 
-  // Draw cannon
-  const drawCannon = useCallback((ctx) => {
-    const x = cannonX;
-    const y = CANVAS_HEIGHT - 20;
-
-    // Shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-    ctx.beginPath();
-    ctx.ellipse(x, CANVAS_HEIGHT - 5, CANNON.width / 2, 8, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Base
-    ctx.fillStyle = CANNON.color;
-    ctx.beginPath();
-    ctx.roundRect(x - CANNON.width / 2, y - CANNON.height / 2, CANNON.width, CANNON.height, 8);
-    ctx.fill();
-
-    // Barrel
-    ctx.fillStyle = CANNON.barrelColor;
-    ctx.beginPath();
-    ctx.roundRect(x - 7, y - CANNON.height - 12, 14, 24, 4);
-    ctx.fill();
-
-    // Barrel highlight
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-    ctx.beginPath();
-    ctx.roundRect(x - 4, y - CANNON.height - 10, 4, 18, 2);
-    ctx.fill();
-
-    // Base highlight
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-    ctx.beginPath();
-    ctx.roundRect(x - CANNON.width / 2 + 4, y - CANNON.height / 2 + 4, CANNON.width - 8, 8, 4);
-    ctx.fill();
-    
-    // Cannon glow when rapid fire
-    if (activeEffects.rapidFire) {
-      ctx.shadowColor = '#00ffff';
-      ctx.shadowBlur = 20;
-      ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
-      ctx.beginPath();
-      ctx.roundRect(x - CANNON.width / 2, y - CANNON.height / 2, CANNON.width, CANNON.height, 8);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    }
-  }, [cannonX, activeEffects]);
-
-  // Draw background
+  // Draw Gojo-themed background
   const drawBackground = useCallback((ctx, time) => {
-    // Gradient background
+    // Dark gradient background
     const gradient = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
     gradient.addColorStop(0, '#0a0a1a');
     gradient.addColorStop(0.5, '#0f0f2a');
@@ -148,24 +111,131 @@ const Game = ({ onGameOver, score, setScore, lives, setLives }) => {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Animated stars
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    for (let i = 0; i < 60; i++) {
-      const x = (i * 97 + time * 0.01) % CANVAS_WIDTH;
-      const y = (i * 53) % (CANVAS_HEIGHT - 100);
-      const twinkle = Math.sin(time / 500 + i) * 0.5 + 0.5;
-      ctx.globalAlpha = twinkle * 0.8;
-      ctx.fillRect(x, y, 2, 2);
+    // Animated infinity domain effect (subtle)
+    ctx.strokeStyle = 'rgba(0, 212, 255, 0.1)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 8; i++) {
+      const radius = 100 + i * 80 + Math.sin(time / 2000 + i) * 20;
+      ctx.beginPath();
+      ctx.arc(CANVAS_WIDTH / 2, CANVAS_HEIGHT + 100, radius, Math.PI, 0);
+      ctx.stroke();
     }
-    ctx.globalAlpha = 1;
 
-    // Ground gradient
-    const groundGradient = ctx.createLinearGradient(0, CANVAS_HEIGHT - 40, 0, CANVAS_HEIGHT);
-    groundGradient.addColorStop(0, 'transparent');
-    groundGradient.addColorStop(1, 'rgba(74, 156, 45, 0.3)');
-    ctx.fillStyle = groundGradient;
-    ctx.fillRect(0, CANVAS_HEIGHT - 40, CANVAS_WIDTH, 40);
+    // Floating particles (infinity energy)
+    for (let i = 0; i < 30; i++) {
+      const x = (i * 97 + time * 0.02) % CANVAS_WIDTH;
+      const y = (i * 53 + Math.sin(time / 1000 + i) * 20) % (CANVAS_HEIGHT - 80);
+      const alpha = 0.3 + Math.sin(time / 500 + i) * 0.2;
+      const size = 2 + Math.sin(time / 300 + i) * 1;
+      
+      ctx.fillStyle = i % 2 === 0 ? `rgba(0, 212, 255, ${alpha})` : `rgba(123, 104, 238, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Hexagonal grid pattern (subtle)
+    ctx.strokeStyle = 'rgba(123, 104, 238, 0.05)';
+    ctx.lineWidth = 1;
+    const hexSize = 60;
+    for (let row = 0; row < 10; row++) {
+      for (let col = 0; col < 15; col++) {
+        const offsetX = row % 2 === 0 ? 0 : hexSize * 0.866;
+        const x = col * hexSize * 1.732 + offsetX;
+        const y = row * hexSize * 1.5;
+        drawHexagon(ctx, x, y, hexSize * 0.5);
+      }
+    }
+
+    // Bottom platform with glow (lower, at character's feet)
+    const platformGradient = ctx.createLinearGradient(0, CANVAS_HEIGHT - 15, 0, CANVAS_HEIGHT);
+    platformGradient.addColorStop(0, 'rgba(0, 212, 255, 0.15)');
+    platformGradient.addColorStop(0.5, 'rgba(123, 104, 238, 0.25)');
+    platformGradient.addColorStop(1, 'rgba(42, 26, 74, 0.9)');
+    ctx.fillStyle = platformGradient;
+    ctx.fillRect(0, CANVAS_HEIGHT - 15, CANVAS_WIDTH, 15);
+
+    // Platform edge glow
+    ctx.strokeStyle = COLORS.infinityBlue;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = COLORS.infinityBlue;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.moveTo(0, CANVAS_HEIGHT - 15);
+    ctx.lineTo(CANVAS_WIDTH, CANVAS_HEIGHT - 15);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
   }, []);
+
+  // Helper to draw hexagon
+  const drawHexagon = (ctx, x, y, size) => {
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const angle = (Math.PI / 3) * i - Math.PI / 6;
+      const px = x + size * Math.cos(angle);
+      const py = y + size * Math.sin(angle);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.stroke();
+  };
+
+  // Draw Gojo character
+  const drawCharacter = useCallback((ctx) => {
+    const x = characterX;
+    const baseY = CANVAS_HEIGHT + 5; // Feet on the platform
+    const imgWidth = CHARACTER.width;
+    const imgHeight = CHARACTER.height;
+    
+    // Subtle glow effect under character
+    ctx.save();
+    ctx.shadowColor = COLORS.infinityBlue;
+    ctx.shadowBlur = 15;
+    ctx.fillStyle = 'rgba(0, 212, 255, 0.25)';
+    ctx.beginPath();
+    ctx.ellipse(x, baseY - 5, 40, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    
+    // Draw Gojo sprite if loaded, otherwise draw placeholder
+    if (gojoImageRef.current && gojoImageRef.current.complete) {
+      ctx.drawImage(
+        gojoImageRef.current,
+        x - imgWidth / 2,
+        baseY - imgHeight,
+        imgWidth,
+        imgHeight
+      );
+    } else {
+      // Fallback: draw a blocky Gojo character
+      ctx.fillStyle = '#1a1a4a';
+      // Body
+      ctx.fillRect(x - 25, baseY - 70, 50, 55);
+      // Head
+      ctx.fillStyle = '#f5d0a9';
+      ctx.fillRect(x - 18, baseY - 95, 36, 30);
+      // Blindfold (Gojo style)
+      ctx.fillStyle = '#000';
+      ctx.fillRect(x - 20, baseY - 88, 40, 10);
+      // Hair (white spiky)
+      ctx.fillStyle = '#e8e8f0';
+      ctx.beginPath();
+      ctx.moveTo(x - 20, baseY - 93);
+      ctx.lineTo(x - 12, baseY - 112);
+      ctx.lineTo(x - 4, baseY - 100);
+      ctx.lineTo(x, baseY - 115);
+      ctx.lineTo(x + 4, baseY - 100);
+      ctx.lineTo(x + 12, baseY - 112);
+      ctx.lineTo(x + 20, baseY - 93);
+      ctx.closePath();
+      ctx.fill();
+      // Legs
+      ctx.fillStyle = '#1a1a3a';
+      ctx.fillRect(x - 18, baseY - 15, 16, 15);
+      ctx.fillRect(x + 2, baseY - 15, 16, 15);
+    }
+  }, [characterX]);
 
   // Main game loop
   const gameLoop = useCallback((deltaTime) => {
@@ -183,7 +253,6 @@ const Game = ({ onGameOver, score, setScore, lives, setLives }) => {
     if (lastSpawnRef.current >= getSpawnRate()) {
       lastSpawnRef.current = 0;
       
-      // Chance to spawn power-up
       if (Math.random() < DIFFICULTY.powerUpChance) {
         fruitsRef.current.push(createPowerUp());
       } else {
@@ -215,10 +284,8 @@ const Game = ({ onGameOver, score, setScore, lives, setLives }) => {
       const now = performance.now();
       
       destroyedFruits.forEach(fruit => {
-        // Create explosion particles
-        particlesRef.current.push(...createExplosion(fruit.x, fruit.y, fruit.emoji));
+        particlesRef.current.push(...createExplosion(fruit.x, fruit.y, fruit.emoji, fruit.color));
         
-        // Handle power-ups
         if (fruit.isPowerUp) {
           if (fruit.effect === 'extraLife') {
             setLives(prev => Math.min(prev + 1, 5));
@@ -229,14 +296,19 @@ const Game = ({ onGameOver, score, setScore, lives, setLives }) => {
             setActiveEffects(prev => ({ ...prev, rapidFire: true }));
             setTimeout(() => setActiveEffects(prev => ({ ...prev, rapidFire: false })), fruit.duration);
           }
-          addFloatingScore(fruit.x, fruit.y, fruit.effect === 'extraLife' ? '+♥' : '⚡', true);
+          addFloatingScore(fruit.x, fruit.y, fruit.effect === 'extraLife' ? '+💙' : '⚡', true);
         } else if (fruit.isBomb) {
-          // Bomb penalty
-          setScore(prev => Math.max(0, prev + fruit.points));
-          addFloatingScore(fruit.x, fruit.y, fruit.points, false);
+          // Bomb takes away 1 life
+          setLives(prev => {
+            const newLives = prev - 1;
+            if (newLives <= 0) {
+              onGameOver();
+            }
+            return Math.max(0, newLives);
+          });
+          addFloatingScore(fruit.x, fruit.y, '-1 💔', false);
           setCombo(0);
         } else {
-          // Calculate combo
           const timeSinceLastHit = now - lastHitTimeRef.current;
           let newCombo = combo;
           
@@ -249,7 +321,6 @@ const Game = ({ onGameOver, score, setScore, lives, setLives }) => {
           setCombo(newCombo);
           lastHitTimeRef.current = now;
           
-          // Calculate points with combo and power-up multipliers
           let points = fruit.points * newCombo;
           if (activeEffects.doublePoints) points *= 2;
           
@@ -264,23 +335,23 @@ const Game = ({ onGameOver, score, setScore, lives, setLives }) => {
       
       fruitsDestroyedRef.current += destroyedFruits.filter(f => !f.isPowerUp && !f.isBomb).length;
 
-      // Check for wave progression
       if (fruitsDestroyedRef.current >= DIFFICULTY.waveThreshold * wave) {
         setWave(prev => prev + 1);
       }
     }
 
-    // Check for escaped fruits (not power-ups or bombs)
+    // Check for escaped fruits (fruits that pass below character)
+    const escapeLineY = CANVAS_HEIGHT - 20;
     const escapedFruits = fruitsRef.current.filter(f => 
-      isFruitOffScreen(f, CANVAS_HEIGHT) && !f.isPowerUp
+      isFruitOffScreen(f, escapeLineY) && !f.isPowerUp
     );
     
     if (escapedFruits.length > 0) {
-      fruitsRef.current = fruitsRef.current.filter(f => !isFruitOffScreen(f, CANVAS_HEIGHT));
+      fruitsRef.current = fruitsRef.current.filter(f => !isFruitOffScreen(f, escapeLineY));
       
       const livesLost = escapedFruits.filter(f => !f.isBomb).length;
       if (livesLost > 0) {
-        setCombo(0); // Reset combo on miss
+        setCombo(0);
         setLives(prev => {
           const newLives = prev - livesLost;
           if (newLives <= 0) {
@@ -294,32 +365,25 @@ const Game = ({ onGameOver, score, setScore, lives, setLives }) => {
     // Update and draw particles
     particlesRef.current = updateParticles(particlesRef.current, ctx, deltaTime);
 
-    // Draw fruits
+    // Draw fruits (enhanced)
     fruitsRef.current.forEach((fruit) => drawFruit(ctx, fruit));
 
-    // Draw cannon
-    drawCannon(ctx);
-
-    // Draw ground line
-    ctx.strokeStyle = COLORS.primary;
-    ctx.lineWidth = 3;
-    ctx.shadowColor = COLORS.primary;
-    ctx.shadowBlur = 10;
-    ctx.beginPath();
-    ctx.moveTo(0, CANVAS_HEIGHT - 4);
-    ctx.lineTo(CANVAS_WIDTH, CANVAS_HEIGHT - 4);
-    ctx.stroke();
-    ctx.shadowBlur = 0;
+    // Draw character
+    drawCharacter(ctx);
 
     // Draw floating scores
     floatingScores.forEach(fs => {
       const age = (Date.now() - fs.id) / 800;
       ctx.save();
       ctx.globalAlpha = 1 - age;
-      ctx.font = fs.isCombo ? 'bold 18px "Press Start 2P", monospace' : '14px "Press Start 2P", monospace';
-      ctx.fillStyle = fs.isCombo ? COLORS.combo : (typeof fs.points === 'string' ? '#00ff00' : (fs.points < 0 ? '#ff0000' : COLORS.primary));
+      ctx.font = fs.isCombo ? 'bold 22px Arial, sans-serif' : '18px Arial, sans-serif';
+      ctx.fillStyle = fs.isCombo ? COLORS.combo : (typeof fs.points === 'string' ? COLORS.infinityBlue : (fs.points < 0 ? COLORS.accent : COLORS.primary));
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 3;
       ctx.textAlign = 'center';
-      ctx.fillText(typeof fs.points === 'string' ? fs.points : `+${fs.points}`, fs.x, fs.y - age * 40);
+      const text = typeof fs.points === 'string' ? fs.points : `+${fs.points}`;
+      ctx.strokeText(text, fs.x, fs.y - age * 50);
+      ctx.fillText(text, fs.x, fs.y - age * 50);
       ctx.restore();
     });
 
@@ -328,17 +392,19 @@ const Game = ({ onGameOver, score, setScore, lives, setLives }) => {
       const age = (performance.now() - comboDisplay.time) / 1000;
       ctx.save();
       ctx.globalAlpha = 1 - age;
-      ctx.font = 'bold 24px "Press Start 2P", monospace';
+      ctx.font = 'bold 36px Arial, sans-serif';
       ctx.fillStyle = COLORS.combo;
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 4;
       ctx.textAlign = 'center';
       ctx.shadowColor = COLORS.combo;
-      ctx.shadowBlur = 15;
-      ctx.fillText(`${comboDisplay.combo}x COMBO!`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - age * 30);
+      ctx.shadowBlur = 20;
+      ctx.strokeText(`${comboDisplay.combo}x COMBO!`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - age * 40);
+      ctx.fillText(`${comboDisplay.combo}x COMBO!`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - age * 40);
       ctx.restore();
     }
-  }, [wave, combo, getSpawnRate, drawCannon, drawBackground, setScore, setLives, onGameOver, addFloatingScore, floatingScores, comboDisplay, activeEffects]);
+  }, [wave, combo, getSpawnRate, drawCharacter, drawBackground, setScore, setLives, onGameOver, addFloatingScore, floatingScores, comboDisplay, activeEffects]);
 
-  // Run game loop
   useGameLoop(gameLoop, true);
 
   return (

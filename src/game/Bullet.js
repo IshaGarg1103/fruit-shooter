@@ -1,62 +1,78 @@
-import { BULLET, CANVAS_WIDTH } from './constants';
+import { BULLET, CANVAS_WIDTH, COLORS } from './constants';
 
 let bulletIdCounter = 0;
 
-/**
- * Create a new bullet object
- * @param {number} x - X position to spawn bullet
- * @param {number} canvasHeight - Height of canvas (bullet spawns at bottom)
- */
-export const createBullet = (x, canvasHeight) => {
+export const createBullet = (x, y) => {
   return {
     id: ++bulletIdCounter,
     x: Math.max(BULLET.width / 2, Math.min(x, CANVAS_WIDTH - BULLET.width / 2)),
-    y: canvasHeight - 50, // Start above cannon
+    y: y,
     width: BULLET.width,
     height: BULLET.height,
     speed: BULLET.speed,
+    time: 0,
   };
 };
 
-/**
- * Update bullet position
- * @param {Object} bullet - Bullet to update
- * @param {number} deltaTime - Time since last frame in ms
- */
 export const updateBullet = (bullet, deltaTime) => {
-  bullet.y -= bullet.speed * (deltaTime / 16.67); // Move up, normalize to 60fps
+  bullet.y -= bullet.speed * (deltaTime / 16.67);
+  bullet.time += deltaTime;
   return bullet;
 };
 
 /**
- * Draw bullet on canvas
- * @param {CanvasRenderingContext2D} ctx - Canvas context
- * @param {Object} bullet - Bullet to draw
+ * Draw Gojo's infinity-style projectile
  */
 export const drawBullet = (ctx, bullet) => {
-  // Main bullet body
-  ctx.fillStyle = BULLET.color;
+  ctx.save();
+  ctx.translate(bullet.x, bullet.y);
+  
+  // Outer glow
+  ctx.shadowColor = COLORS.infinityBlue;
+  ctx.shadowBlur = 20;
+  
+  // Energy trail
+  const trailGradient = ctx.createLinearGradient(0, -bullet.height, 0, bullet.height * 2);
+  trailGradient.addColorStop(0, 'rgba(0, 212, 255, 0.8)');
+  trailGradient.addColorStop(0.5, 'rgba(123, 104, 238, 0.4)');
+  trailGradient.addColorStop(1, 'rgba(123, 104, 238, 0)');
+  
+  ctx.fillStyle = trailGradient;
   ctx.beginPath();
-  ctx.roundRect(
-    bullet.x - bullet.width / 2,
-    bullet.y - bullet.height / 2,
-    bullet.width,
-    bullet.height,
-    4
-  );
+  ctx.moveTo(0, -bullet.height / 2);
+  ctx.lineTo(-bullet.width / 2, bullet.height);
+  ctx.lineTo(bullet.width / 2, bullet.height);
+  ctx.closePath();
   ctx.fill();
-
-  // Glow effect
-  ctx.shadowColor = BULLET.color;
-  ctx.shadowBlur = 10;
+  
+  // Core energy ball
+  const coreGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, bullet.width);
+  coreGradient.addColorStop(0, '#ffffff');
+  coreGradient.addColorStop(0.3, COLORS.infinityBlue);
+  coreGradient.addColorStop(1, COLORS.infinityPurple);
+  
+  ctx.fillStyle = coreGradient;
+  ctx.beginPath();
+  ctx.arc(0, 0, bullet.width / 1.5, 0, Math.PI * 2);
   ctx.fill();
+  
+  // Inner bright core
   ctx.shadowBlur = 0;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(0, -2, bullet.width / 4, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Rotating energy ring
+  ctx.strokeStyle = `rgba(0, 212, 255, ${0.5 + Math.sin(bullet.time / 50) * 0.3})`;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, bullet.width + Math.sin(bullet.time / 100) * 3, 0, Math.PI * 2);
+  ctx.stroke();
+  
+  ctx.restore();
 };
 
-/**
- * Check if bullet is off screen
- * @param {Object} bullet - Bullet to check
- */
 export const isBulletOffScreen = (bullet) => {
   return bullet.y < -bullet.height;
 };
