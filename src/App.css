@@ -31,6 +31,12 @@ body {
   justify-content: center;
   align-items: center;
   overflow: hidden;
+  /* Mobile touch improvements */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* Main app container */
@@ -229,6 +235,9 @@ body {
   width: 100%;
   height: 100%;
   cursor: crosshair;
+  /* Mobile touch improvements */
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ==================== HUD ==================== */
@@ -568,5 +577,218 @@ body {
   
   .lives {
     font-size: 22px;
+  }
+}
+
+/* ==================== MOBILE PORTRAIT OPTIMIZATION ==================== */
+
+@media (max-width: 480px) and (orientation: portrait) {
+  body {
+    align-items: flex-start;
+    padding-top: 10px;
+  }
+
+  .app {
+    width: 100vw;
+    max-width: 100vw;
+  }
+
+  .game-wrapper {
+    aspect-ratio: 9 / 16;
+    max-height: 85vh;
+    border-radius: 12px;
+    border: 2px solid var(--infinity-blue);
+    margin: 0 5px;
+  }
+
+  .game-over-wrapper {
+    border: 2px solid rgba(212, 165, 116, 0.6) !important;
+  }
+
+  .scanlines {
+    border-radius: 10px;
+  }
+
+  /* Start Screen Mobile */
+  .start-screen {
+    padding: 15px 10px;
+    gap: 6px;
+    justify-content: center;
+  }
+
+  .start-screen .title {
+    font-size: 24px;
+    letter-spacing: 2px;
+  }
+
+  .gojo-title-image {
+    height: 150px;
+    margin: 5px 0;
+  }
+
+  .start-button {
+    font-size: 14px;
+    padding: 12px 30px;
+    margin: 8px 0;
+  }
+
+  .high-score {
+    font-size: 10px;
+    margin: 5px 0;
+  }
+
+  .instructions {
+    font-size: 9px;
+    gap: 4px;
+    margin-top: 8px;
+    padding: 0 10px;
+  }
+
+  /* HUD Mobile */
+  .hud {
+    padding: 8px 10px;
+    flex-wrap: wrap;
+  }
+
+  .hud-left {
+    gap: 10px;
+  }
+
+  .score-container {
+    gap: 6px;
+  }
+
+  .score-icon {
+    font-size: 22px;
+  }
+
+  .score {
+    font-size: 14px;
+  }
+
+  .wave {
+    font-size: 9px;
+  }
+
+  .combo-indicator {
+    font-size: 12px;
+  }
+
+  .life-icon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .lives {
+    gap: 4px;
+  }
+
+  .effect {
+    font-size: 10px;
+    padding: 4px 10px;
+  }
+
+  /* Game Over Mobile */
+  .home-button {
+    width: 36px;
+    height: 36px;
+    top: 12px;
+    left: 12px;
+  }
+
+  .home-button svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .game-over-title {
+    font-size: 32px;
+    margin-bottom: 16px;
+  }
+
+  .new-high-score {
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+
+  .final-score {
+    margin: 16px 0;
+  }
+
+  .score-label {
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  .score-value {
+    font-size: 36px;
+  }
+
+  .high-score-display {
+    font-size: 12px;
+    margin-bottom: 20px;
+  }
+
+  .restart-button {
+    font-size: 14px;
+    padding: 12px 30px;
+  }
+}
+
+/* Extra small phones */
+@media (max-width: 380px) and (orientation: portrait) {
+  .start-screen .title {
+    font-size: 20px;
+  }
+
+  .gojo-title-image {
+    height: 120px;
+  }
+
+  .start-button,
+  .restart-button {
+    font-size: 12px;
+    padding: 10px 24px;
+  }
+
+  .score-value {
+    font-size: 30px;
+  }
+
+  .game-over-title {
+    font-size: 28px;
+  }
+}
+
+/* Mobile landscape */
+@media (max-height: 500px) and (orientation: landscape) {
+  body {
+    align-items: center;
+  }
+
+  .game-wrapper {
+    max-height: 95vh;
+  }
+
+  .start-screen {
+    padding: 10px;
+    gap: 4px;
+  }
+
+  .gojo-title-image {
+    height: 100px;
+  }
+
+  .start-screen .title {
+    font-size: 24px;
+  }
+
+  .hud {
+    padding: 6px 12px;
+  }
+
+  .life-icon {
+    width: 28px;
+    height: 28px;
   }
 }
